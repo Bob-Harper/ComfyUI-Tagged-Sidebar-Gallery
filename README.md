@@ -6,7 +6,6 @@ A customizable gallery that supports all metadata.
 
 [Gallery](#gallery) · [Metadata](#metadata) · [Customization](#customization) · [Search](#search) · [Installation](#installation)
 
-![Demo](https://raw.githubusercontent.com/TokenSpender/ComfyUI-Sidebar-Gallery/media/assets/demo.gif)
 
 </div>
 
