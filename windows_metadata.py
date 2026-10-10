@@ -6,6 +6,7 @@ import os
 from ctypes import wintypes
 
 _VT_VECTOR_LPWSTR = 0x101F
+_VT_LPWSTR = 0x001F
 _GPS_DEFAULT = 0
 _RPC_E_CHANGED_MODE = -2147417850
 _IID_IPROPERTY_STORE = (
@@ -58,6 +59,30 @@ class _PROPVARIANT(ctypes.Structure):
 def _guid(parts: tuple) -> _GUID:
     first, second, third, tail = parts[:4]
     return _GUID(first, second, third, (ctypes.c_ubyte * 8)(*tail))
+
+
+def _split_tags(values: list[str]) -> list[str]:
+    return [
+        tag
+        for value in values
+        for tag in (part.strip() for part in value.split(";"))
+        if tag
+    ]
+
+
+def _tags_from_variant(variant: _PROPVARIANT) -> list[str]:
+    if variant.vt == _VT_VECTOR_LPWSTR and variant.vector.values:
+        values = ctypes.cast(variant.vector.values, ctypes.POINTER(ctypes.c_void_p))
+        raw_tags = [
+            ctypes.wstring_at(values[index])
+            for index in range(variant.vector.count)
+            if values[index]
+        ]
+    elif variant.vt == _VT_LPWSTR and variant.pointer:
+        raw_tags = [ctypes.wstring_at(variant.pointer)]
+    else:
+        return []
+    return _split_tags(raw_tags)
 
 
 def read_windows_metadata(path: str) -> dict[str, list[str]]:
@@ -123,15 +148,7 @@ def read_windows_metadata(path: str) -> dict[str, list[str]]:
             if hr < 0:
                 return {}
             try:
-                if variant.vt != _VT_VECTOR_LPWSTR or not variant.vector.values:
-                    return {}
-                values = ctypes.cast(variant.vector.values, ctypes.POINTER(ctypes.c_void_p))
-                tags = [
-                    ctypes.wstring_at(values[index]).strip()
-                    for index in range(variant.vector.count)
-                    if values[index]
-                ]
-                tags = [tag for tag in tags if tag]
+                tags = _tags_from_variant(variant)
                 return {"windows_tags": tags} if tags else {}
             finally:
                 propvariant_clear(ctypes.byref(variant))

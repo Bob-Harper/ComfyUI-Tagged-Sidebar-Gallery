@@ -24,7 +24,7 @@ import { getSectionRenames, getCustomSectionSearchMap, setCatalogTitles } from "
 const SEARCH_PREFIXES = [
   "name:", "model:", "vae:", "clip:", "lora:", "sampler:", "controlnet:", "prompt:", "keyword:", "app:",
   "mmaudio:", "sampling:", "adetailer:", "upscaling:", "interpolation:",
-  "fileinfo:", "file info:", "extra:", "workflow_nodes:", "workflow nodes:",
+  "fileinfo:", "file info:", "extra:", "workflow_nodes:", "workflow nodes:", "windows_tags:", "windows tags:",
 ];
 
 /* VIRTUAL SCROLL ENGINE
