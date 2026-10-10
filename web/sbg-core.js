@@ -8,7 +8,7 @@
 
 /* Constants */
 
-export const EXT_NAME = "ComfyUI-sidebar-gallery.Sidebar";
+export const EXT_NAME = "Comfyui-Tagged-Sidebar-Gallery.Sidebar";
 // Resolve the stylesheet relative to this module's own served URL, so it loads
 // regardless of the install folder name (e.g. when ComfyUI-Manager uses a
 // different folder than the git-clone instructions).

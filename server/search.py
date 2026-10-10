@@ -26,7 +26,7 @@ def _count_hits(haystack: str, needle: str) -> int:
 _HANDLED_FIELDS = frozenset({
     "app", "source_app", "model", "vae", "clip", "lora", "sampler",
     "controlnet", "prompt", "keyword", "pos_prompt", "neg_prompt",
-    "tags", "lyrics", "track", "mmaudio", "sampling", "adetailer",
+    "tags", "lyrics", "windows_tags", "track", "mmaudio", "sampling", "adetailer",
     "upscaling", "interpolation", "fileinfo", "extra", "workflow_nodes",
 })
 
@@ -187,7 +187,8 @@ def match_summary(s: dict, field: str, value: str, node_classes: list | None = N
         if neg_count:
             results.append({"field": "neg_prompt", "count": neg_count})
 
-    for _f, _k in (("tags", "audio_tags"), ("lyrics", "audio_lyrics")):
+    for _f, _k in (("tags", "audio_tags"), ("lyrics", "audio_lyrics"),
+                   ("windows_tags", "windows_tags")):
         if field in (_f, "any"):
             tv = str(s.get(_k, "")).lower()
             tv_count = tv.count(value) if value else (1 if tv else 0)
@@ -324,7 +325,7 @@ def match_summary(s: dict, field: str, value: str, node_classes: list | None = N
                     "audio_vae", "text_projection",             # model matcher components
                     "loras", "samplers", "sampler_name",        # lora/sampler matchers
                     "clip_skip", "shift", "sampling_type",      # sampling matcher
-                    "audio_tags", "audio_lyrics", "track",      # tags/lyrics/track matchers
+                    "audio_tags", "audio_lyrics", "windows_tags", "track",  # tag matchers
                     "source_app", "controlnet", "positive_prompt", "negative_prompt",
                     "workflow_nodes", "mmaudio", "adetailer", "upscaling", "interpolation", "extra",
                     "resolution", "codec", "fps", "total_frames", "duration", "duration_seconds"}

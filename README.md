@@ -35,6 +35,8 @@ For ComfyUI files, the parser reads the workflow graph rather than a flat parame
 
 Every node and parameter found in a file is recorded, not just the fields shown by default. Anything that was captured can be added to the panel from the layout editor, including parameters from custom nodes that no built-in layout covers.
 
+On Windows, the gallery also reads a file's Windows Keywords tags. They are indexed in the summary, searchable with `windows_tags:`, and available as a standalone Windows Tags section in the layout editor.
+
 Split MoE workflows, such as Wan 2.2, use separate high-noise and low-noise passes. Their models, LoRAs, and samplers are paired and shown side by side. The viewer also provides Copy Prompt, and Compare, which places two items next to each other field by field.
 
 ## Customization

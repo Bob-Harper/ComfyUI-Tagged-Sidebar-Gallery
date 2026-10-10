@@ -38,7 +38,8 @@ const labelize = (s) => String(s).split(".").pop()
 const PATH_GROUPS = [
   { key: "file", label: "File Info", test: p => ["filename", "path", "filesize", "resolution", "generation_resolution", "width", "height", "modified", "duration", "duration_seconds", "codec", "fps", "total_frames", "sample_rate", "channels", "bitrate"].includes(p) },
   { key: "models", label: "Models", test: p => ["model", "vae", "clip_skip", "clip_models", "model_hash", "text_projection", "audio_vae"].includes(p) },
-  { key: "prompts", label: "Prompts", test: p => !p.includes(".") && (/prompt/i.test(p) || p === "audio_tags" || p === "audio_lyrics") },
+  { key: "prompts", label: "Prompts", test: p => !p.includes(".") && (/prompt/i.test(p) || p === "audio_lyrics") },
+  { key: "tags", label: "Tags", test: p => p === "audio_tags" || p === "windows_tags" },
   { key: "samplers", label: "Sampling", test: p => p.startsWith("samplers.") || p === "shift" || p === "sampling_type" },
   { key: "loras", label: "LoRAs", test: p => p.startsWith("loras.") },
   { key: "controlnet", label: "ControlNet", test: p => p.startsWith("controlnet.") },
@@ -1511,7 +1512,7 @@ export function renderLayout(content, galleryCtx, closeGS) {
     const parts = String(path).split(".");
     const head = parts[0];
     if (head === "workflow_nodes") return { field: splitNodePath(parts).ct || "workflow_nodes", value: "" };
-    const HEAD_FIELD = { samplers: "sampling", loras: "lora", controlnet: "controlnet", adetailer: "adetailer", upscaling: "upscaling", interpolation: "interpolation", mmaudio: "mmaudio", track: "track", extra: "extra", model: "model", vae: "model", clip_skip: "sampling", positive_prompt: "prompt", negative_prompt: "prompt", initial_prompt: "prompt", audio_tags: "tags", audio_lyrics: "lyrics" };
+    const HEAD_FIELD = { samplers: "sampling", loras: "lora", controlnet: "controlnet", adetailer: "adetailer", upscaling: "upscaling", interpolation: "interpolation", mmaudio: "mmaudio", track: "track", extra: "extra", model: "model", vae: "model", clip_skip: "sampling", positive_prompt: "prompt", negative_prompt: "prompt", initial_prompt: "prompt", audio_tags: "tags", audio_lyrics: "lyrics", windows_tags: "windows_tags" };
     if (HEAD_FIELD[head]) return { field: HEAD_FIELD[head], value: "" };
     if (["filename", "path", "filesize", "resolution", "modified", "duration", "codec", "fps", "total_frames"].includes(head)) return { field: "fileinfo", value: "" };
     return { field: "any", value: parts[parts.length - 1] };

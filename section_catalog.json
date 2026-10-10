@@ -124,6 +124,16 @@
       }
     },
     {
+      "key": "windows_tags", "section_id": "windows_tags", "title": "Windows Tags", "kind": "text",
+      "search_field": "windows_tags", "search_aliases": ["windows tag", "file tags"],
+      "summary_keys": ["windows_tags"],
+      "media": ["image", "video", "audio"],
+      "default": {
+        "style": "text", "open": true,
+        "params": [ { "path": "windows_tags", "label": "Windows Tags", "style": "text" } ]
+      }
+    },
+    {
       "key": "audio_lyrics", "section_id": "audio_lyrics", "title": "Lyrics", "kind": "text",
       "search_field": "lyrics", "search_aliases": ["lyric"],
       "summary_keys": ["audio_lyrics"],

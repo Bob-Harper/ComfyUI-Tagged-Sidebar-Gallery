@@ -20,7 +20,7 @@ PNG_SIGNATURE = b"\x89PNG\r\n\x1a\n"
 # Bump when the parser's output changes shape/coverage. Stored summaries are
 # cached in the DB; on startup a mismatch triggers a background re-extraction
 # so existing files pick up the new parser (see routes._check_parser_version).
-PARSER_VERSION = 58
+PARSER_VERSION = 59
 
 # Hard cap on any single captured node text/param string. "Show"/display nodes can
 # be wired to dump enormous blobs, which would bloat the DB and slow search.

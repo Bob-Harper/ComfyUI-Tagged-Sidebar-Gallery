@@ -25,6 +25,7 @@ from .metadata import PARSER_VERSION, read_metadata_for_file, guess_mime, saniti
 from . import schema
 from .search import match_item
 from .security import AllowedRoot, make_root_id, safe_join
+from ..windows_metadata import read_windows_metadata
 
 # Two dedicated worker pools, split by latency class, isolate gallery work from
 # ComfyUI's shared default executor and from each other (so a long scan or video
@@ -651,11 +652,19 @@ def _read_metadata_for_db(full_path: str) -> dict | None:
             max_text_chunk_bytes=cfg.max_text_chunk_bytes,
             max_decompressed_text_bytes=cfg.max_decompressed_text_bytes,
         )
-        if md.summary:
-            return sanitize_for_json(md.summary)
-        return None
+        summary = _add_windows_tags(md.summary or {}, full_path)
+        return sanitize_for_json(summary) if summary else None
     except Exception:
         return None
+
+
+def _add_windows_tags(summary: dict, full_path: str) -> dict:
+    tags = read_windows_metadata(full_path).get("windows_tags")
+    if not tags:
+        return summary
+    tagged_summary = dict(summary)
+    tagged_summary["windows_tags"] = tags
+    return tagged_summary
 
 
 
@@ -1501,6 +1510,12 @@ async def get_metadata(request: web.Request):
                 summary = json.loads(db_row["metadata_json"])
             except Exception:
                 summary = {}
+            try:
+                full = safe_join(root.path, relpath_clean)
+            except ValueError:
+                return web.Response(status=400)
+            summary = await asyncio.get_running_loop().run_in_executor(
+                _IO_EXECUTOR, _add_windows_tags, summary, full)
             # Gzipped like the endpoint's disk branch: this is the HOT branch
             # (every lightbox navigation and prefetch reads it).
             return _json_gz({
@@ -1539,7 +1554,8 @@ async def get_metadata(request: web.Request):
 
     # Prefer DB summary if available (already parsed during indexing)
     db_row = media_db.get_file(root_id, relpath_clean)
-    summary = md.summary
+    summary = await asyncio.get_running_loop().run_in_executor(
+        _IO_EXECUTOR, _add_windows_tags, md.summary, full)
     if db_row and db_row.get("metadata_json"):
         try:
             summary = json.loads(db_row["metadata_json"])
@@ -1656,7 +1672,8 @@ async def get_metadata_ondemand(request: web.Request):
                 "size": int(st.st_size),
                 "mtime": float(st.st_mtime),
             },
-            "summary": md.summary or {},
+            "summary": await loop.run_in_executor(
+                _IO_EXECUTOR, _add_windows_tags, md.summary or {}, full),
         }
         return _json_gz(sanitize_for_json(result))
     except Exception as e:
