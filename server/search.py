@@ -131,7 +131,7 @@ def match_summary(s: dict, field: str, value: str, node_classes: list | None = N
                     models.extend(ev)
                 elif ev:
                     models.append(ev)
-        count = sum(1 for model in models if value in str(model).lower())
+        count = sum(1 for model in models if value in safe_lower(model))
         if count:
             results.append({"field": "model", "count": count})
 
@@ -139,7 +139,7 @@ def match_summary(s: dict, field: str, value: str, node_classes: list | None = N
     # typing it).
     if field == "vae":
         vaes = [v for v in (s.get("vae"), s.get("audio_vae")) if v]
-        count = sum(1 for v in vaes if value in str(v).lower())
+        count = sum(1 for v in vaes if value in safe_lower(v))
         if count:
             results.append({"field": "vae", "count": count})
 
@@ -148,7 +148,7 @@ def match_summary(s: dict, field: str, value: str, node_classes: list | None = N
         clips = list(cm) if isinstance(cm, list) else [cm] if cm else []
         tp = s.get("text_projection")
         clips.extend(tp if isinstance(tp, list) else [tp] if tp else [])
-        count = sum(1 for c in clips if value in str(c).lower())
+        count = sum(1 for c in clips if value in safe_lower(c))
         if count:
             results.append({"field": "clip", "count": count})
 
@@ -160,7 +160,7 @@ def match_summary(s: dict, field: str, value: str, node_classes: list | None = N
         count = 0
         for l in (loras if isinstance(loras, list) else []):
             lname = l.get("name", "") if isinstance(l, dict) else str(l)
-            if value in lname.lower():
+            if value in safe_lower(lname):
                 count += 1
         if count:
             results.append({"field": "lora", "count": count})
@@ -170,9 +170,9 @@ def match_summary(s: dict, field: str, value: str, node_classes: list | None = N
         count = 0
         for samp in (samplers if isinstance(samplers, list) else []):
             sname = samp.get("sampler_name", "") if isinstance(samp, dict) else ""
-            if value in sname.lower():
+            if value in safe_lower(sname):  #
                 count += 1
-        sname_top = str(s.get("sampler_name", "")).lower()
+        sname_top = safe_lower(s.get("sampler_name", ""))
         if sname_top and value in sname_top:
             count += 1
         if count:
@@ -183,14 +183,14 @@ def match_summary(s: dict, field: str, value: str, node_classes: list | None = N
         count = 0
         for cn in (cns if isinstance(cns, list) else []):
             cname = cn.get("model", "") if isinstance(cn, dict) else str(cn)
-            if value in cname.lower():
+            if value in safe_lower(cname):  #
                 count += 1
         if count:
             results.append({"field": "controlnet", "count": count})
 
     if field in ("prompt", "keyword", "any"):
-        pos = str(s.get("positive_prompt", "")).lower()
-        neg = str(s.get("negative_prompt", "")).lower()
+        pos = safe_lower(s.get("positive_prompt", ""))
+        neg = safe_lower(s.get("negative_prompt", ""))
         # Empty value = presence query (bare "prompt" section search).
         pos_count = pos.count(value) if value else (1 if pos else 0)
         neg_count = neg.count(value) if value else (1 if neg else 0)
@@ -202,13 +202,13 @@ def match_summary(s: dict, field: str, value: str, node_classes: list | None = N
     for _f, _k in (("tags", "audio_tags"), ("lyrics", "audio_lyrics"),
                    ("windows_tags", "windows_tags")):
         if field in (_f, "any"):
-            tv = str(s.get(_k, "")).lower()
+            tv = safe_lower(s.get("_k", ""))
             tv_count = tv.count(value) if value else (1 if tv else 0)
             if tv_count:
                 results.append({"field": _f, "count": tv_count})
 
     if field in ("app", "source_app", "any"):
-        app = str(s.get("source_app", "")).lower()
+        app = safe_lower(s.get("source_app", ""))
         if value and value in app:
             results.append({"field": "app", "count": 1})
 
@@ -237,13 +237,13 @@ def match_summary(s: dict, field: str, value: str, node_classes: list | None = N
                     # In "any" mode, skip sampler_name: the sampler check above already covers it
                     if field == "any" and k == "sampler_name":
                         continue
-                    sv = str(v).lower()
-                    if value in k.lower() or value in sv:
+                    sv = safe_lower(v)
+                    if value in safe_lower(k) or value in sv:  #
                         results.append({"field": "sampling", "count": _count_hits(sv, value)})
                         break
         for tk in ("clip_skip", "shift", "sampling_type"):
             tv = s.get(tk)
-            if tv is not None and value in str(tv).lower():
+            if tv is not None and value in safe_lower(tv):  #
                 results.append({"field": "sampling", "count": 1})
 
     # List sections score one result per entry; the per-field merge below
@@ -262,7 +262,7 @@ def match_summary(s: dict, field: str, value: str, node_classes: list | None = N
     if field in ("fileinfo", "any"):
         for fk in ("resolution", "codec", "fps", "total_frames", "duration", "duration_seconds"):
             fv = s.get(fk)
-            if fv is not None and value in str(fv).lower():
+            if fv is not None and value in safe_lower(fv):  #
                 results.append({"field": "fileinfo", "count": 1})
 
     if field in ("extra", "any"):
@@ -273,27 +273,27 @@ def match_summary(s: dict, field: str, value: str, node_classes: list | None = N
                 results.append({"field": "extra", "count": count})
 
     if field in ("workflow_nodes", "any"):
-        wanted = {str(c).lower() for c in node_classes} if node_classes else None
+        wanted = {safe_lower(c) for c in node_classes} if node_classes else None  #
         nodes = s.get("workflow_nodes", [])
         if isinstance(nodes, list):
             for node in nodes:
                 if not isinstance(node, dict):
                     continue
                 if wanted is not None:
-                    ct = str(node.get("class_type") or "").lower()
-                    ti = str(node.get("title") or "").lower()
+                    ct = safe_lower(node.get("class_type") or "")
+                    ti = safe_lower(node.get("title") or "")
                     if ct not in wanted and ti not in wanted:
                         continue
                 node_display = node.get("title") or node.get("class_type") or "Node"
-                node_name_lower = node_display.lower()
+                node_name_lower = safe_lower(node_display)
                 count = 0
                 if value and value in node_name_lower:
                     count += 1
                 params = node.get("params", {})
                 if isinstance(params, dict):
                     for k, v in params.items():
-                        sv = str(v).lower()
-                        if value in k.lower() or value in sv:
+                        sv = safe_lower(v)
+                        if value in safe_lower(k) or value in sv:  #
                             count += _count_hits(sv, value)
                 if count:
                     results.append({"field": node_display, "count": count})
@@ -304,11 +304,11 @@ def match_summary(s: dict, field: str, value: str, node_classes: list | None = N
         # class_type, while a node may carry a custom title, and either counts.
         nodes = s.get("workflow_nodes", [])
         if isinstance(nodes, list):
-            clean_field = field.replace("workflow nodes::", "").strip().lower()
+            clean_field = safe_lower(field.replace("workflow nodes::", "").strip())
             for node in nodes:
                 if not isinstance(node, dict): continue
-                ct = str(node.get("class_type") or "").lower()
-                title = str(node.get("title") or "").lower()
+                ct = safe_lower(node.get("class_type") or "")
+                title = safe_lower(node.get("title") or "")
                 if clean_field and (clean_field == ct or clean_field == title):
                     display_name = node.get("title") or node.get("class_type") or "Node"
                     if not value:
@@ -321,8 +321,8 @@ def match_summary(s: dict, field: str, value: str, node_classes: list | None = N
                                 for v in obj.values(): m += _search_val(v)
                             elif isinstance(obj, list):
                                 for item in obj: m += _search_val(item)
-                            elif value in str(obj).lower():
-                                m += str(obj).lower().count(value)
+                            elif value in safe_lower(obj):  #
+                                m += safe_lower(obj).count(value)  #
                             return m
                         c = _search_val(params)
                         if c > 0:
@@ -359,12 +359,12 @@ def match_summary(s: dict, field: str, value: str, node_classes: list | None = N
                     if (is_root and field == "any" and k == "initial_image"
                             and "initial_images" in obj):
                         continue
-                    val_str = str(v).lower()
+                    val_str = safe_lower(v)
                     if field == "any":
-                        if value in k.lower() or value in val_str:
+                        if value in safe_lower(k) or value in val_str:  #
                             matches += _count_hits(val_str, value)
                     else:
-                        if k.lower() == field.lower() and value in val_str:
+                        if safe_lower(k) == safe_lower(field) and value in val_str:
                             matches += _count_hits(val_str, value)
                     matches += _deep_search(v)
             elif isinstance(obj, list):
