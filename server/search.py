@@ -5,7 +5,12 @@ routes.py pulls in aiohttp and folder_paths. Pure stdlib here.
 """
 from __future__ import annotations
 
-from typing import Any
+
+def safe_lower(v):
+    try:
+        return str(v).lower()
+    except Exception:
+        return ""
 
 
 def _count_hits(haystack: str, needle: str) -> int:
@@ -43,6 +48,8 @@ def _entry_hits(entry: dict, value: str) -> int:
 
 
 def match_item(s: dict | None, relpath: str, tags: list[dict], mode: str) -> list[dict] | None:
+
+
     """Evaluate every search tag against one item and combine them with AND/OR.
 
     ``s`` is the parsed metadata summary (None when the item has none),
@@ -54,48 +61,50 @@ def match_item(s: dict | None, relpath: str, tags: list[dict], mode: str) -> lis
     "name" key, so a deep metadata match would hit lora names instead of
     filenames and break AND searches that combine name: with metadata tags.
     """
-    file_matched_fields: list[dict] = []
-    tag_checks: list[bool] = []
+    try:
+        file_matched_fields = []
+        tag_checks = []
 
-    for tag in tags:
-        field = tag.get("field", "any").lower()
-        value = tag.get("value", "").lower()
-        is_exclude = tag.get("exclude", False)
-        node_classes = tag.get("node_classes")
 
-        if not value and field == "any" and not is_exclude:
-            tag_checks.append(True)
-            continue
+        for tag in tags:
 
-        tag_matched_fields: list[dict] = []
+            field = tag.get("field", "any").lower()
+            value = tag.get("value", "").lower()
+            is_exclude = tag.get("exclude", False)
+            node_classes = tag.get("node_classes")
 
-        if field == "name":
-            fname = relpath.replace("\\", "/").rsplit("/", 1)[-1].lower()
-            if value in fname:
-                tag_matched_fields = [{"field": "name", "count": fname.count(value) if value else 1}]
-        elif s:
-            tag_matched_fields = match_summary(s, field, value, node_classes)
+            tag_matched_fields = []
 
-        # Free-text searches also hit the filename.
-        if not tag_matched_fields and field == "any" and value and value in relpath.lower():
-            tag_matched_fields = [{"field": "filename", "count": relpath.lower().count(value)}]
+            if field == "name":
+                fname = relpath.replace("\\", "/").rsplit("/", 1)[-1].lower()
+                if value in fname:
+                    tag_matched_fields = [{"field": "name", "count": fname.count(value) if value else 1}]
 
-        if is_exclude:
-            tag_checks.append(len(tag_matched_fields) == 0)
-        else:
-            if tag_matched_fields:
-                file_matched_fields.extend(tag_matched_fields)
-                tag_checks.append(True)
+            elif s:
+                tag_matched_fields = match_summary(s, field, value, node_classes)
+
+            if not tag_matched_fields and field == "any" and value and value in relpath.lower():
+                tag_matched_fields = [{"field": "filename", "count": relpath.lower().count(value)}]
+
+            if is_exclude:
+                tag_checks.append(len(tag_matched_fields) == 0)
             else:
-                tag_checks.append(False)
+                if tag_matched_fields:
+                    file_matched_fields.extend(tag_matched_fields)
+                    tag_checks.append(True)
+                else:
+                    tag_checks.append(False)
 
-    is_match = all(tag_checks) if mode == "AND" else any(tag_checks)
-    if not is_match:
-        return None
-    # Tags that were all empty or all excludes can pass with no concrete
-    # field hits; report a generic match so the item still shows.
-    return file_matched_fields or [{"field": "any", "count": 1}]
+        is_match = all(tag_checks) if mode == "AND" else any(tag_checks)
 
+        if not is_match:
+            return None
+
+        result = file_matched_fields or [{"field": "any", "count": 1}]
+        return result
+
+    except Exception as e:
+        raise
 
 def match_summary(s: dict, field: str, value: str, node_classes: list | None = None) -> list[dict]:
     """Returns a list of {field, count} for ALL matching fields.
@@ -144,7 +153,10 @@ def match_summary(s: dict, field: str, value: str, node_classes: list | None = N
             results.append({"field": "clip", "count": count})
 
     if field in ("lora", "any"):
+
         loras = s.get("loras", [])
+        if not isinstance(loras, list):
+            loras = [loras]
         count = 0
         for l in (loras if isinstance(loras, list) else []):
             lname = l.get("name", "") if isinstance(l, dict) else str(l)
